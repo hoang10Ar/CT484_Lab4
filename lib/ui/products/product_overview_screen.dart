@@ -4,6 +4,7 @@ import 'package:myshop/ui/cart/cart_screen.dart';
 import 'package:myshop/ui/products/products_grid.dart';
 import 'package:myshop/ui/products/top_right_badge.dart';
 import 'package:myshop/ui/shared/app_drawer.dart';
+import 'package:provider/provider.dart';
 
 enum FilterOptions { favorites, all }
 
@@ -58,16 +59,20 @@ class _ProductsOverviewScreenState extends State<ProductsOverviewScreen> {
   }
 
   Widget buildShoppingCartIcon() {
-    return TopRightBadge(
-      data: CartManager().productCount,
-      child: IconButton(
-        icon: const Icon(
-          Icons.shopping_cart,
-        ),
-        onPressed: () {
-          Navigator.of(context).pushNamed(CartScreen.routeName);
-        },
-      ),
+    return Consumer<CartManager>(
+      builder: (context, cartManager, child) {
+        return TopRightBadge(
+          data: cartManager.productCount,
+          child: IconButton(
+            icon: const Icon(
+              Icons.shopping_cart,
+            ),
+            onPressed: () {
+              Navigator.of(context).pushNamed(CartScreen.routeName);
+            },
+          ),
+        );
+      },
     );
   }
 }
