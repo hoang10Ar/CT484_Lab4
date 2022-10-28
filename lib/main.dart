@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myshop/ui/products/edit_product_screen.dart';
 import 'package:myshop/ui/screens.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load();
   runApp(const MyApp());
 }
 
@@ -24,52 +26,69 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => OrdersManager(),
         ),
-      ],
-      child: MaterialApp(
-        title: 'My Shop',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          fontFamily: 'Lato',
-          colorScheme: ColorScheme.fromSwatch(
-            primarySwatch: Colors.purple,
-          ).copyWith(
-            secondary: Colors.deepOrange,
-          ),
+        ChangeNotifierProvider(
+          create: (context) => AuthManager(),
         ),
-        home: const ProductsOverviewScreen(),
-        routes: {
-          CartScreen.routeName: (context) => const CartScreen(),
-          OrdersScreen.routeName: (context) => const OrdersScreen(),
-          UserProductsScreen.routeName: (context) => const UserProductsScreen(),
-        },
-        onGenerateRoute: (settings) {
-          if (settings.name == ProductDetailScreen.routeName) {
-            final productId = settings.arguments as String;
+      ],
+      child: Consumer<AuthManager>(
+        builder: (context, authManager, child) {
+          return MaterialApp(
+            title: 'My Shop',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              fontFamily: 'Lato',
+              colorScheme: ColorScheme.fromSwatch(
+                primarySwatch: Colors.purple,
+              ).copyWith(
+                secondary: Colors.deepOrange,
+              ),
+            ),
+            home: authManager.isAuth
+                ? const ProductsOverviewScreen()
+                : FutureBuilder(
+                    future: authManager.tryAutoLogin(),
+                    builder: (context, snapshot) {
+                      return snapshot.connectionState == ConnectionState.waiting
+                          ? const SplashScreen()
+                          : const AuthScreen();
+                    },
+                  ),
+            routes: {
+              CartScreen.routeName: (context) => const CartScreen(),
+              OrdersScreen.routeName: (context) => const OrdersScreen(),
+              UserProductsScreen.routeName: (context) =>
+                  const UserProductsScreen(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == ProductDetailScreen.routeName) {
+                final productId = settings.arguments as String;
 
-            return MaterialPageRoute(
-              builder: (context) {
-                return ProductDetailScreen(
-                  context.read<ProductsManager>().findById(productId),
+                return MaterialPageRoute(
+                  builder: (context) {
+                    return ProductDetailScreen(
+                      context.read<ProductsManager>().findById(productId),
+                    );
+                  },
                 );
-              },
-            );
-          }
+              }
 
-          if (settings.name == EditProductScreen.routeName) {
-            final productId = settings.arguments as String?;
+              if (settings.name == EditProductScreen.routeName) {
+                final productId = settings.arguments as String?;
 
-            return MaterialPageRoute(
-              builder: (context) {
-                return EditProductScreen(
-                  productId != null
-                      ? context.read<ProductsManager>().findById(productId)
-                      : null,
+                return MaterialPageRoute(
+                  builder: (context) {
+                    return EditProductScreen(
+                      productId != null
+                          ? context.read<ProductsManager>().findById(productId)
+                          : null,
+                    );
+                  },
                 );
-              },
-            );
-          }
+              }
 
-          return null;
+              return null;
+            },
+          );
         },
       ),
     );
